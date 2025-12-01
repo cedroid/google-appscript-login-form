@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+html,body{height:100%;margin:0}
+body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif}
+.layout{display:flex;height:100%}
+aside{width:220px;border-right:1px solid #ddd;padding:12px;box-sizing:border-box}
+nav a{display:block;padding:8px 6px;text-decoration:none;color:#222;border-radius:6px}
+nav a.active{background:#efefef}
+main{flex:1;display:flex;flex-direction:column}
+header{padding:16px;border-bottom:1px solid #ddd}
+.content{padding:16px;overflow:auto}
+.row{margin:8px 0}
+label{display:block;margin-bottom:4px}
+input{height:32px}
+button{height:32px}
+.section{margin-top:16px}
+#loader{position:fixed;top:0;left:0;width:100%;height:100%;display:none;align-items:center;justify-content:center;flex-direction:column;background:rgba(0,0,0,0.2);backdrop-filter:blur(6px)}
+.spinner{width:48px;height:48px;border:5px solid #c7c7c7;border-top-color:#333;border-radius:50%;animation:spin 1s linear infinite;margin-bottom:12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+#loader-text{font-weight:600}
+dialog{border:none;border-radius:8px;padding:16px}
+dialog::backdrop{background:rgba(0,0,0,0.25);backdrop-filter:blur(6px)}
+</style>
+</head>
+<body>
+<?!= HtmlService.createHtmlOutputFromFile('common').getContent(); ?>
+<div class="layout">
+  <aside>
+    <nav>
+      <!-- User navigation -->
+      <a href="#" id="nav-overview" onclick="navigate('overview')">Overview</a>
+      <a href="#" id="nav-profile" onclick="navigate('profile')">Profile</a>
+      <a href="#" id="nav-account" onclick="navigate('account')">Account</a>
+    </nav>
+  </aside>
+  <main role="main">
+    <header>
+      <h2>Welcome <?= name ?> <?= lastName ?></h2>
+      <p id="email"><?= email ?></p>
+      <p id="role">Role: <?= role ?></p>
+      <!-- Sign out navigates back to login page -->
+      <div class="actions"><button type="button" onclick="signOut()">Sign out</button></div>
+    </header>
+    <div class="content">
+      <!-- Overview section -->
+      <section id="overview" class="section" aria-labelledby="overview-title">
+        <h3 id="overview-title">Overview</h3>
+        <p>Basic access to your data.</p>
+      </section>
+
+      <!-- Profile details -->
+      <section id="profile" class="section" aria-labelledby="profile-title" hidden>
+        <h3 id="profile-title">Profile</h3>
+        <div class="row"><label>Full Name</label><input value="<?= name ?> <?= lastName ?>" readonly></div>
+        <div class="row"><label>Email</label><input value="<?= email ?>" readonly></div>
+      </section>
+      <!-- Account settings: change password -->
+      <section id="account" class="section" aria-labelledby="account-title" hidden>
+        <h3 id="account-title">Change Password</h3>
+        <div class="row"><label for="current-password">Current Password</label><input id="current-password" type="password" autocomplete="off"></div>
+        <div class="row"><label for="new-password">New Password</label><input id="new-password" type="password" autocomplete="off"></div>
+        <div class="row"><label for="confirm-password">Confirm New Password</label><input id="confirm-password" type="password" autocomplete="off"></div>
+        <div class="actions"><button type="button" onclick="handleChangePassword()">Update Password</button></div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<script>
+// Current logged-in username provided by server template
+const ACTOR='<?= username ?>';
+// Declares section ids used by shared navigation helper
+window.SECTIONS=['overview','profile','account'];
+// Shows default section on load
+function init(){ navigate('overview'); }
+document.addEventListener('DOMContentLoaded',init);
+// Validates inputs and requests server to change password
+function handleChangePassword(){
+  const current=document.getElementById('current-password').value.trim();
+  const np=document.getElementById('new-password').value.trim();
+  const cp=document.getElementById('confirm-password').value.trim();
+  if(!current||!np||!cp){showDialog('Complete all fields');return;}
+  if(np!==cp){showDialog('Passwords do not match');return;}
+  if(!(np.length>=8 && /[A-Za-z]/.test(np) && /[0-9]/.test(np))){showDialog('Password must be at least 8 chars with letters and numbers');return;}
+  showLoader('Updating password...');
+  google.script.run.withSuccessHandler(function(res){
+    hideLoader();
+    if(res&&res.success){
+      showDialog('Password updated');
+      document.getElementById('current-password').value='';
+      document.getElementById('new-password').value='';
+      document.getElementById('confirm-password').value='';
+    } else { showDialog(res&&res.message?res.message:'Failed to update password'); }
+  }).changePassword(ACTOR,current,np);
+}
+// Renders login page server-side and replaces current document
+function signOut(){
+  showLoader('Signing out...');
+  google.script.run.withSuccessHandler(function(html){
+    hideLoader();
+    document.open();document.write(html);document.close();
+  }).renderPage('login');
+}
+</script>
+</body>
+</html>
