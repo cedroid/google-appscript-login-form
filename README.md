@@ -24,7 +24,7 @@ Robust authentication and user management built on Google Apps Script and Google
 3. In `code.gs`, set your Spreadsheet ID in `CONFIG.SPREADSHEET_ID`:
    ```js
    const CONFIG = {
-     SPREADSHEET_ID: 'YOUR_SPREADSHEET_ID',
+     SPREADSHEET_ID: 'YOUR-SPREADSHEET-ID-HERE',
      // ...
    };
    ```
@@ -82,4 +82,5 @@ Robust authentication and user management built on Google Apps Script and Google
 
 ## Limitations & Notes
 - Email sending uses `MailApp`; ensure your account/domain policies allow outbound mail to the stored email addresses.
+
 - This sample focuses on server-side rendering and sheet-backed auth; for session management or multi-tenant setups, extend with tokens and additional policies.
